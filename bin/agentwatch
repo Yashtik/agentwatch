@@ -1,0 +1,52 @@
+#!/bin/sh
+# agentwatch: open the live viewer for your Claude Code agents, from any folder.
+#   agentwatch           start it in the background (if it isn't running) and open your browser
+#   agentwatch stop      stop it
+#   agentwatch status    say whether it's running
+# Set AGENTWATCH_PORT to use another port (default 8765).
+set -eu
+
+ROOT="$(python3 -I -c 'import os, sys; print(os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[1]))))' "$0")"
+PORT="${AGENTWATCH_PORT:-8765}"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/agentwatch"
+PAGE="$STATE/launch-$PORT.html"
+LOG="$STATE/server-$PORT.log"
+umask 077
+mkdir -p "$STATE"
+chmod 700 "$STATE"
+
+health() { curl -fs --max-time 2 "http://127.0.0.1:$PORT/api/health" 2>/dev/null | grep -q '"app": "agentwatch"'; }
+open_page() {
+  # The page holds the viewer's key, so only its path goes on the command line, never the key.
+  if command -v open >/dev/null 2>&1; then open "$PAGE"
+  elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$PAGE" >/dev/null 2>&1
+  else echo "Open this file in your browser: $PAGE"
+  fi
+}
+
+case "${1:-start}" in
+  start) ;;
+  stop)
+    if pkill -f "$ROOT/live/server.py"; then echo "Agent viewer stopped."; else echo "Agent viewer wasn't running."; fi
+    exit 0 ;;
+  status)
+    if health; then echo "Agent viewer is running on port $PORT."; else echo "Agent viewer isn't running."; fi
+    exit 0 ;;
+  *) echo "usage: agentwatch [start|stop|status]" >&2; exit 2 ;;
+esac
+
+if ! health; then
+  if curl -s --max-time 2 -o /dev/null "http://127.0.0.1:$PORT/"; then
+    echo "Something else is using port $PORT, so the viewer won't open there. Try: AGENTWATCH_PORT=8766 agentwatch" >&2
+    exit 1
+  fi
+  nohup python3 -I "$ROOT/live/server.py" --port "$PORT" --no-open >"$LOG" 2>&1 &
+  i=0
+  while [ "$i" -lt 40 ] && ! { health && [ -f "$PAGE" ]; }; do sleep 0.25; i=$((i + 1)); done
+  if ! { health && [ -f "$PAGE" ]; }; then
+    echo "The agent viewer didn't start. See $LOG" >&2
+    exit 1
+  fi
+fi
+open_page
+echo "Agent viewer is open (port $PORT). It stops when you close its tab (or: agentwatch stop)."
