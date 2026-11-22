@@ -27,7 +27,13 @@ open_page() {
 case "${1:-start}" in
   start) ;;
   stop)
-    if pkill -f "$ROOT/live/server.py"; then echo "Agent viewer stopped."; else echo "Agent viewer wasn't running."; fi
+    # Find the viewer by its port, not its folder: it may have been started from another copy
+    # (the repo, or Claude Code's plugin copy of an older version).
+    stopped=no
+    for pid in $(lsof -ti "tcp:$PORT" -sTCP:LISTEN 2>/dev/null); do
+      if ps -o command= -p "$pid" | grep -q "live/server.py"; then kill "$pid" && stopped=yes; fi
+    done
+    if [ "$stopped" = yes ]; then echo "Agent viewer stopped."; else echo "Agent viewer wasn't running."; fi
     exit 0 ;;
   status)
     if health; then echo "Agent viewer is running on port $PORT."; else echo "Agent viewer isn't running."; fi
@@ -40,7 +46,7 @@ if ! health; then
     echo "Something else is using port $PORT, so the viewer won't open there. Try: AGENTWATCH_PORT=8766 agentwatch" >&2
     exit 1
   fi
-  nohup python3 -I "$ROOT/live/server.py" --port "$PORT" --no-open >"$LOG" 2>&1 &
+  nohup python3 -I "$ROOT/live/server.py" --port "$PORT" --no-open </dev/null >"$LOG" 2>&1 &
   i=0
   while [ "$i" -lt 40 ] && ! { health && [ -f "$PAGE" ]; }; do sleep 0.25; i=$((i + 1)); done
   if ! { health && [ -f "$PAGE" ]; }; then

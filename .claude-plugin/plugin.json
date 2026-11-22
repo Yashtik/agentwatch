@@ -1,0 +1,8 @@
+{
+  "name": "agentwatch",
+  "version": "0.1.0",
+  "description": "Watch your Claude Code and Codex agents work, live, in a browser window that looks like their screen.",
+  "author": { "name": "Yashtik" },
+  "repository": "https://github.com/Yashtik/agentwatch",
+  "license": "MIT"
+}

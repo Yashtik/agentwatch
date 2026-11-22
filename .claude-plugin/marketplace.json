@@ -1,0 +1,11 @@
+{
+  "name": "agentwatch",
+  "owner": { "name": "Yashtik" },
+  "plugins": [
+    {
+      "name": "agentwatch",
+      "source": "./",
+      "description": "Watch your Claude Code and Codex agents work, live, in a browser window that looks like their screen."
+    }
+  ]
+}

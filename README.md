@@ -19,6 +19,17 @@ agentwatch/bin/agentwatch
 
 To start it with just `agentwatch` from any folder, link `bin/agentwatch` into a folder on your PATH, like `~/.local/bin`.
 
+## Open it from Claude Code
+
+Inside Claude Code, install it once:
+
+```
+/plugin marketplace add Yashtik/agentwatch
+/plugin install agentwatch@agentwatch
+```
+
+Then type `/agentwatch` and pick `/agentwatch:agentwatch`. The viewer opens in your browser while your agent keeps working.
+
 ## Use
 
 It follows whichever window is working, and the menu at the top right switches between windows. With both Claude Code and Codex open, a switch next to it flips between them. It only shows what happens while it's open. Close the tab to stop it. It also stops when you close your last agent window.
